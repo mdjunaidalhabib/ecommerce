@@ -30,8 +30,49 @@ export function CartProvider({ children }) {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
+  // ✅ Reusable cart functions
+  const updateCart = (id, change) => {
+    setCart((prev) => {
+      const qty = (prev[id] || 0) + change;
+      if (qty <= 0) {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      }
+      return { ...prev, [id]: qty };
+    });
+  };
+
+  const removeFromCart = (id) => {
+    setCart((prev) => {
+      const copy = { ...prev };
+      delete copy[id];
+      return copy;
+    });
+  };
+
+  const toggleWishlist = (id) => {
+    setWishlist((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((x) => x !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
   return (
-    <CartContext.Provider value={{ cart, setCart, wishlist, setWishlist }}>
+    <CartContext.Provider
+      value={{
+        cart,
+        setCart,
+        wishlist,
+        setWishlist,
+        updateCart,
+        removeFromCart,
+        toggleWishlist,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

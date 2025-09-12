@@ -7,6 +7,9 @@ import passport from "passport";
 import { dbConnect } from "./src/lib/db.js";
 import { configurePassport } from "./src/auth/passport.js";
 import authRoutes from "./src/routes/auth.js";
+import locationRoutes from "./src/routes/locationRoutes.js";
+import order from "./src/routes/order.js";
+
 
 dotenv.config();
 const app = express();
@@ -44,6 +47,10 @@ app.use(passport.session());
 
 // ✅ Routes
 app.use("/auth", authRoutes);
+app.use("/api/locations", locationRoutes);
+app.use("/api/orders", order);
+
+
 
 // ✅ Server start
 app.listen(process.env.PORT || 4000, () =>

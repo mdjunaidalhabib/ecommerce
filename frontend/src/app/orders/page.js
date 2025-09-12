@@ -38,22 +38,49 @@ export default function OrdersPage() {
       ) : (
         <div className="space-y-4">
           {orders.map((o) => (
-            <div key={o._id} className="bg-white rounded-xl shadow p-4">
-              <div className="flex items-center justify-between">
+            <div
+              key={o._id}
+              className="bg-white rounded-xl shadow p-4 border border-gray-200"
+            >
+              <div className="flex items-center justify-between mb-2">
                 <p className="font-semibold">Order #{o._id.slice(-6)}</p>
                 <span className="text-sm text-gray-600">
                   {new Date(o.createdAt).toLocaleString()}
                 </span>
               </div>
-              <p className="text-sm text-gray-600 mb-2">Status: {o.status}</p>
-              <ul className="text-sm list-disc pl-5">
+
+              <p className="text-sm mb-2">Status: {o.status}</p>
+
+              <ul className="text-sm list-disc pl-5 mb-2">
                 {o.items.map((it, idx) => (
                   <li key={idx}>
                     {it.name} × {it.qty} — ৳{it.price * it.qty}
                   </li>
                 ))}
               </ul>
-              <div className="mt-2 font-medium">Total: ৳{o.total}</div>
+
+              <div className="flex justify-between font-bold text-green-700">
+                <span>Total:</span>
+                <span>৳{o.total}</span>
+              </div>
+
+              <div className="mt-3 flex gap-3">
+                {/* ✅ View Summary */}
+                <a
+                  href={`/order-summary/${o._id}`}
+                  className="px-3 py-1 bg-indigo-600 text-white rounded hover:bg-indigo-700 text-sm"
+                >
+                  View Summary
+                </a>
+
+                {/* ✅ Direct Receipt Download */}
+                <a
+                  href={`http://localhost:4000/api/orders/${o._id}/receipt`}
+                  className="px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                >
+                  Download Receipt
+                </a>
+              </div>
             </div>
           ))}
         </div>

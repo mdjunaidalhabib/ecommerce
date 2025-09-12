@@ -9,41 +9,14 @@ import { FaPlus, FaMinus, FaTrash, FaHeart } from "react-icons/fa";
 
 export default function CartPage() {
   const router = useRouter();
-  const { cart, setCart, wishlist, setWishlist } = useCart();
+  // ✅ Context থেকে সব নিয়ে নিচ্ছি
+  const { cart, wishlist, updateCart, removeFromCart, toggleWishlist } =
+    useCart();
 
   const ids = Object.keys(cart).map(Number);
   const items = products.filter((p) => ids.includes(p.id));
   const grandTotal = items.reduce((sum, p) => sum + p.price * cart[p.id], 0);
 
-  const updateCart = (id, change) => {
-    setCart((prev) => {
-      const qty = (prev[id] || 0) + change;
-      if (qty <= 0) {
-        const copy = { ...prev };
-        delete copy[id];
-        return copy;
-      }
-      return { ...prev, [id]: qty };
-    });
-  };
-
-  const removeFromCart = (id) => {
-    setCart((prev) => {
-      const copy = { ...prev };
-      delete copy[id];
-      return copy;
-    });
-  };
-
-  const toggleWishlist = (id) => {
-    if (wishlist.includes(id)) {
-      setWishlist(wishlist.filter((x) => x !== id));
-    } else {
-      setWishlist([...wishlist, id]);
-    }
-  };
-
-  // ✅ Checkout হ্যান্ডলার (login চেক সহ)
   // ✅ Checkout হ্যান্ডলার (login চেক সহ)
   const handleCheckout = async () => {
     try {
@@ -58,10 +31,9 @@ export default function CartPage() {
           "http://localhost:3000/checkout"
         );
         console.log(
-          "❌ Not logged in. Redirecting to Google login with redirect:",
+          "❌ Not logged in. Redirecting to Google login:",
           redirectUrl
         );
-
         window.location.href = `http://localhost:4000/auth/google?redirect=${redirectUrl}`;
         return;
       }
@@ -133,6 +105,7 @@ export default function CartPage() {
                   </div>
                 </div>
 
+                {/* Qty control */}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => updateCart(p.id, -1)}
@@ -149,6 +122,7 @@ export default function CartPage() {
                   </button>
                 </div>
 
+                {/* Remove button */}
                 <button
                   onClick={() => removeFromCart(p.id)}
                   className="bg-red-600 text-white px-3 py-2 rounded flex items-center gap-1 hover:bg-red-700"
@@ -156,6 +130,7 @@ export default function CartPage() {
                   <FaTrash /> Remove
                 </button>
 
+                {/* Wishlist button */}
                 <button
                   onClick={() => toggleWishlist(p.id)}
                   className={`p-3 rounded-full shadow ${
