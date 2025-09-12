@@ -1,29 +1,45 @@
-// app/categories/[id]/page.jsx
-import products from "../../../../data/products";
-import categories from "../../../../data/categories";
 import ProductCard from "../../../../components/home/ProductCard";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 
-// স্ট্যাটিক জেনারেশনের জন্য (ইচ্ছা করলে বাদও দিতে পারো)
+// ✅ নির্দিষ্ট ক্যাটাগরি ফেচ
+async function getCategory(id) {
+  const res = await fetch(`http://localhost:4000/api/categories/${id}`, {
+    cache: "no-store",
+  });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// ✅ নির্দিষ্ট ক্যাটাগরির products ফেচ
+async function getCategoryProducts(id) {
+  const res = await fetch(
+    `http://localhost:4000/api/categories/${id}/products`,
+    {
+      cache: "no-store",
+    }
+  );
+  if (!res.ok) return [];
+  return res.json();
+}
+
 export async function generateStaticParams() {
+  const res = await fetch("http://localhost:4000/api/categories");
+  if (!res.ok) return [];
+  const categories = await res.json();
   return categories.map((c) => ({ id: String(c.id) }));
 }
 
-function getCategoryById(id) {
-  // id string হতে পারে—products.category এর সাথে মেলানো দরকার
-  return categories.find((c) => String(c.id) === String(id));
-}
-
 export default async function CategoryPage({ params }) {
-  const { id } = await params; // আপনার সেটআপে params await লাগছে
-  const category = getCategoryById(id);
-  if (!category) return notFound();
+  const { id } = params;
 
-  // products.category == category.id মিলিয়ে ফিল্টার
-  const items = products.filter(
-    (p) => String(p.category) === String(category.id)
-  );
+  // ক্যাটাগরি + products ফেচ
+  const [category, items] = await Promise.all([
+    getCategory(id),
+    getCategoryProducts(id),
+  ]);
+
+  if (!category) return notFound();
 
   return (
     <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -51,7 +67,7 @@ export default async function CategoryPage({ params }) {
       {items.length ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {items.map((p) => (
-            <ProductCard key={p.id} product={p} />
+            <ProductCard key={p._id || p.id} product={p} />
           ))}
         </div>
       ) : (

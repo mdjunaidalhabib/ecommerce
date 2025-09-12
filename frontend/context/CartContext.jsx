@@ -4,24 +4,37 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 const CartContext = createContext();
 
 export function CartProvider({ children }) {
-  // Load from localStorage initially
-  const [cart, setCart] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("cart");
-      return saved ? JSON.parse(saved) : {};
-    }
-    return {};
-  });
+  const [cart, setCart] = useState({});
+  const [wishlist, setWishlist] = useState([]);
 
-  const [wishlist, setWishlist] = useState(() => {
-    if (typeof window !== "undefined") {
-      const saved = localStorage.getItem("wishlist");
-      return saved ? JSON.parse(saved) : [];
+  // ✅ LocalStorage থেকে load করার সময় normalize
+  useEffect(() => {
+    // ---- Cart ----
+    const savedCart = localStorage.getItem("cart");
+    if (savedCart) {
+      const parsed = JSON.parse(savedCart);
+      const normalized = {};
+      Object.keys(parsed).forEach((key) => {
+        // ✅ শুধু MongoDB _id (string) রাখব
+        if (String(key).length > 10) {
+          normalized[String(key)] = parsed[key];
+        }
+      });
+      setCart(normalized);
+      localStorage.setItem("cart", JSON.stringify(normalized));
     }
-    return [];
-  });
 
-  // Save to localStorage on change
+    // ---- Wishlist ----
+    const savedWishlist = localStorage.getItem("wishlist");
+    if (savedWishlist) {
+      const parsed = JSON.parse(savedWishlist);
+      const normalized = parsed.filter((id) => String(id).length > 10); // ✅ numeric বাদ
+      setWishlist(normalized.map((id) => String(id)));
+      localStorage.setItem("wishlist", JSON.stringify(normalized));
+    }
+  }, []);
+
+  // ✅ Save to localStorage
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(cart));
   }, [cart]);
@@ -30,35 +43,34 @@ export function CartProvider({ children }) {
     localStorage.setItem("wishlist", JSON.stringify(wishlist));
   }, [wishlist]);
 
-  // ✅ Reusable cart functions
+  // ✅ সবসময় String(id) ব্যবহার
   const updateCart = (id, change) => {
+    const key = String(id);
     setCart((prev) => {
-      const qty = (prev[id] || 0) + change;
+      const qty = (prev[key] || 0) + change;
       if (qty <= 0) {
         const copy = { ...prev };
-        delete copy[id];
+        delete copy[key];
         return copy;
       }
-      return { ...prev, [id]: qty };
+      return { ...prev, [key]: qty };
     });
   };
 
   const removeFromCart = (id) => {
+    const key = String(id);
     setCart((prev) => {
       const copy = { ...prev };
-      delete copy[id];
+      delete copy[key];
       return copy;
     });
   };
 
   const toggleWishlist = (id) => {
-    setWishlist((prev) => {
-      if (prev.includes(id)) {
-        return prev.filter((x) => x !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
+    const key = String(id);
+    setWishlist((prev) =>
+      prev.includes(key) ? prev.filter((x) => x !== key) : [...prev, key]
+    );
   };
 
   return (

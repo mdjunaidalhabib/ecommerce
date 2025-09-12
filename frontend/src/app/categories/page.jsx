@@ -1,9 +1,18 @@
-// app/categories/page.jsx
-import categories from "../../../data/categories";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function ShopByCategoryPage() {
+// ✅ ক্যাটাগরি ডেটা ফেচ
+async function getCategories() {
+  const res = await fetch("http://localhost:4000/api/categories", {
+    cache: "no-store",
+  });
+  if (!res.ok) return [];
+  return res.json();
+}
+
+export default async function ShopByCategoryPage() {
+  const categories = await getCategories();
+
   return (
     <main className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       {/* Breadcrumb */}
@@ -22,7 +31,7 @@ export default function ShopByCategoryPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-6">
         {categories.map((cat) => (
           <Link
-            key={cat.id}
+            key={cat._id || cat.id}
             href={`/categories/${cat.id}`}
             className="group block bg-white shadow rounded-xl overflow-hidden hover:shadow-md transition"
           >

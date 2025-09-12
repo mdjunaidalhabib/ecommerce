@@ -9,6 +9,8 @@ import { configurePassport } from "./src/auth/passport.js";
 import authRoutes from "./src/routes/auth.js";
 import locationRoutes from "./src/routes/locationRoutes.js";
 import order from "./src/routes/order.js";
+import productRoutes from "./src/routes/productRoutes.js";
+import categoryRoutes from "./src/routes/categoryRoutes.js";
 
 
 dotenv.config();
@@ -49,6 +51,9 @@ app.use(passport.session());
 app.use("/auth", authRoutes);
 app.use("/api/locations", locationRoutes);
 app.use("/api/orders", order);
+app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
+
 
 
 

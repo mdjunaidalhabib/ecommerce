@@ -1,21 +1,19 @@
 "use client";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import products from "../../data/products"; // <-- adjust path as needed
-import categories from "../../data/categories"; // <-- adjust path as needed
-import ProductCard from "./ProductCard"; // <-- adjust path as needed
+import ProductCard from "./ProductCard";
 
 // Utility: group products by category id
 const groupByCategory = (all, catId) => all.filter((p) => p.category === catId);
 
-// CategoryRow: a reusable row that shows a category title + a multi-card slider underneath
+// CategoryRow: reusable slider per category
 const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
   const trackRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [enableTransition, setEnableTransition] = useState(true);
-  const [slidesPerView, setSlidesPerView] = useState(2); // mobile default
+  const [slidesPerView, setSlidesPerView] = useState(2);
 
-  // Decide slides per view from viewport width
+  // slides per view from viewport width
   useEffect(() => {
     const calc = () => {
       const w = window.innerWidth;
@@ -29,10 +27,10 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
     return () => window.removeEventListener("resize", apply);
   }, []);
 
-  // Build an extended list for looping (duplicate enough items so we can autoplay infinitely)
+  // extended list for looping autoplay
   const extended = useMemo(() => {
     if (!items || items.length === 0) return [];
-    const minLen = items.length + slidesPerView * 2; // buffer
+    const minLen = items.length + slidesPerView * 2;
     const out = [];
     let i = 0;
     while (out.length < minLen) {
@@ -42,14 +40,14 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
     return out;
   }, [items, slidesPerView]);
 
-  // Autoplay (always forward)
+  // autoplay
   useEffect(() => {
     if (!extended.length || !autoPlayMs) return;
     const id = setInterval(() => setIndex((i) => i + 1), autoPlayMs);
     return () => clearInterval(id);
   }, [extended.length, autoPlayMs]);
 
-  // When index grows too large, snap it back within a safe window to avoid huge numbers
+  // reset index if overflow
   useEffect(() => {
     if (!extended.length) return;
     const maxSafe = items.length + slidesPerView;
@@ -61,7 +59,7 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
     }
   }, [index, extended.length, items.length, slidesPerView]);
 
-  // Pointer swipe (mobile)
+  // pointer swipe
   const startXRef = useRef(0);
   const draggingRef = useRef(false);
   const deltaXRef = useRef(0);
@@ -132,7 +130,7 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
         >
           {extended.map((prod, i) => (
             <div
-              key={`${prod.id}-${i}`}
+              key={`${prod._id || prod.id}-${i}`}
               className="shrink-0 px-2"
               style={{ width: `${100 / slidesPerView}%` }}
             >
@@ -145,15 +143,36 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
   );
 };
 
-// Custom autoplay speed per category
+// Custom autoplay speed
 const speedByCategory = {
   electronics: 2500,
   fashion: 3200,
   home: 4000,
-  // add more if needed
 };
 
 export default function HomeCategorySections() {
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+
+  // fetch products + categories from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [pRes, cRes] = await Promise.all([
+          fetch("http://localhost:4000/api/products").then((res) => res.json()),
+          fetch("http://localhost:4000/api/categories").then((res) =>
+            res.json()
+          ),
+        ]);
+        setProducts(pRes);
+        setCategories(cRes);
+      } catch (err) {
+        console.error("❌ Failed to fetch products or categories", err);
+      }
+    };
+    fetchData();
+  }, []);
+
   return (
     <div className="space-y-4">
       {categories.map((cat) => {

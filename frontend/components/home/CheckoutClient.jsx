@@ -2,7 +2,6 @@
 import { apiFetch } from "../../utils/api";
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import products from "../../data/products";
 import { useCart } from "../../context/CartContext";
 import { FaTrashAlt, FaPlus, FaMinus } from "react-icons/fa";
 
@@ -13,24 +12,50 @@ export default function CheckoutPage() {
   const productId = searchParams.get("productId");
   const qty = Number(searchParams.get("qty")) || 1;
 
+  // ✅ সব products DB থেকে লোড
+  const [allProducts, setAllProducts] = useState([]);
+
+  useEffect(() => {
+    fetch("http://localhost:4000/api/products")
+      .then((res) => res.json())
+      .then(setAllProducts)
+      .catch((err) => console.error("❌ Failed to load products", err));
+  }, []);
+
+  // ✅ cartItems বানানো
   const cartItems = useMemo(() => {
+    if (!allProducts.length) return [];
+
+    // ---- Single Checkout Mode ----
     if (productId) {
-      const p = products.find((x) => x.id == productId);
+      const p = allProducts.find((x) => String(x._id) === String(productId));
       if (!p) return [];
-      return [{ productId, name: p.name, price: p.price, qty, image: p.image }];
+      return [
+        {
+          productId: p._id,
+          name: p.name,
+          price: p.price,
+          qty, // query param থেকে quantity
+          image: p.image,
+        },
+      ];
     }
 
-    return Object.keys(cart).map((id) => {
-      const p = products.find((x) => x.id == id);
-      return {
-        productId: id,
-        name: p.name,
-        price: p.price,
-        qty: cart[id],
-        image: p.image,
-      };
-    });
-  }, [cart, productId, qty]);
+    // ---- Full Cart Mode ----
+    return Object.keys(cart)
+      .map((id) => {
+        const p = allProducts.find((x) => String(x._id) === String(id));
+        if (!p) return null;
+        return {
+          productId: p._id,
+          name: p.name,
+          price: p.price,
+          qty: cart[id],
+          image: p.image,
+        };
+      })
+      .filter(Boolean);
+  }, [cart, productId, qty, allProducts]);
 
   const subtotal = cartItems.reduce((sum, i) => sum + i.price * i.qty, 0);
 
@@ -136,8 +161,11 @@ export default function CheckoutPage() {
 
       if (res.ok) {
         const data = await res.json();
+
+        // ✅ শুধু full cart হলে clear করব
         if (!productId) setCart({});
-        // ✅ Redirect to order summary page
+
+        // ✅ Redirect to order summary
         window.location.href = `/order-summary/${data.order._id}`;
       } else {
         console.error("🔥 Order failed", res);
@@ -283,31 +311,35 @@ export default function CheckoutPage() {
                   />
                   <div>
                     <p className="font-medium">{it.name}</p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <button
-                        onClick={() => updateCart(it.productId, -1)}
-                        className="px-2 py-1 bg-red-500 text-white rounded"
-                      >
-                        <FaMinus />
-                      </button>
-                      <span>{it.qty}</span>
-                      <button
-                        onClick={() => updateCart(it.productId, +1)}
-                        className="px-2 py-1 bg-green-500 text-white rounded"
-                      >
-                        <FaPlus />
-                      </button>
-                    </div>
+                    {!productId && (
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          onClick={() => updateCart(it.productId, -1)}
+                          className="px-2 py-1 bg-red-500 text-white rounded"
+                        >
+                          <FaMinus />
+                        </button>
+                        <span>{it.qty}</span>
+                        <button
+                          onClick={() => updateCart(it.productId, +1)}
+                          className="px-2 py-1 bg-green-500 text-white rounded"
+                        >
+                          <FaPlus />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="text-right">
                   <p className="font-semibold">৳{it.price * it.qty}</p>
-                  <button
-                    onClick={() => removeFromCart(it.productId)}
-                    className="text-red-500 text-sm flex items-center gap-1 mt-1"
-                  >
-                    <FaTrashAlt /> Remove
-                  </button>
+                  {!productId && (
+                    <button
+                      onClick={() => removeFromCart(it.productId)}
+                      className="text-red-500 text-sm flex items-center gap-1 mt-1"
+                    >
+                      <FaTrashAlt /> Remove
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

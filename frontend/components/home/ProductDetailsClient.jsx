@@ -3,14 +3,7 @@ import React, { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  FaStar,
-  FaPlus,
-  FaMinus,
-  FaHeart,
-  FaShareAlt,
-  FaPalette,
-} from "react-icons/fa";
+import { FaStar, FaPlus, FaMinus, FaHeart, FaPalette } from "react-icons/fa";
 import ProductCard from "./ProductCard";
 import { useCart } from "../../context/CartContext";
 
@@ -40,12 +33,14 @@ export default function ProductDetailsClient({
   }, [product, activeColor]);
 
   const [activeIdx, setActiveIdx] = useState(0);
-  const quantity = cart[product.id] || 0;
+
+  // ✅ এখন সবখানে _id ব্যবহার হবে
+  const quantity = cart[product._id] || 0;
   const totalPrice = product.price * quantity;
   const discountPct = product.oldPrice
     ? (((product.oldPrice - product.price) / product.oldPrice) * 100).toFixed(1)
     : null;
-  const isInWishlist = wishlist.includes(product.id);
+  const isInWishlist = wishlist.includes(product._id);
 
   const updateCart = (id, change) => {
     setCart((prev) => {
@@ -64,44 +59,32 @@ export default function ProductDetailsClient({
     else setWishlist([...wishlist, id]);
   };
 
-  // ✅ Single checkout handler with login check
-  // ✅ Single checkout handler with login check
-  const handleSingleCheckout = async () => {
-    try {
-      const checkoutUrl = `/checkout?productId=${product.id}&qty=${
-        quantity || 1
-      }`;
+  // ✅ Single checkout handler
+const handleSingleCheckout = async () => {
+  try {
+    const checkoutUrl = `/checkout?productId=${product._id}&qty=${
+      quantity || 1
+    }`;
 
-      console.log("👉 Trying to checkout single product:", checkoutUrl);
+    const res = await fetch("http://localhost:4000/auth/checkout", {
+      credentials: "include",
+    });
 
-      const res = await fetch("http://localhost:4000/auth/checkout", {
-        credentials: "include",
-      });
-
-      if (res.status === 401) {
-        const redirectUrl = encodeURIComponent(
-          `http://localhost:3000${checkoutUrl}`
-        );
-        console.log(
-          "❌ Not logged in. Redirecting to Google login with redirect:",
-          redirectUrl
-        );
-
-        window.location.href = `http://localhost:4000/auth/google?redirect=${redirectUrl}`;
-        return;
-      }
-
-      if (!quantity) {
-        console.log("ℹ️ Adding product to cart before checkout");
-        updateCart(product.id, +1);
-      }
-
-      console.log("✅ Logged in. Going to checkout:", checkoutUrl);
-      router.push(checkoutUrl);
-    } catch (err) {
-      console.error("🔥 Checkout error:", err);
+    if (res.status === 401) {
+      const redirectUrl = encodeURIComponent(
+        `http://localhost:3000${checkoutUrl}`
+      );
+      window.location.href = `http://localhost:4000/auth/google?redirect=${redirectUrl}`;
+      return;
     }
-  };
+
+    // ❌ আর cart-এ add করার দরকার নেই
+    // শুধু checkout page এ redirect করব
+    router.push(checkoutUrl);
+  } catch (err) {
+    console.error("🔥 Checkout error:", err);
+  }
+};
 
   const [tab, setTab] = useState("desc"); // desc | info | reviews
   const tabBtn = (key, label) => (
@@ -166,7 +149,6 @@ export default function ProductDetailsClient({
                       ? "border-blue-600"
                       : "border-gray-200 hover:border-gray-300"
                   }`}
-                  title={`Image ${i + 1}`}
                 >
                   <Image
                     src={src}
@@ -180,7 +162,7 @@ export default function ProductDetailsClient({
           )}
         </div>
 
-        {/* Summary / Buy box */}
+        {/* Summary */}
         <div className="bg-white rounded-2xl shadow p-4 sm:p-6">
           <h1 className="text-2xl sm:text-3xl font-semibold mb-2">
             {product.name}
@@ -209,7 +191,7 @@ export default function ProductDetailsClient({
             </span>
           </div>
 
-          {/* Price + Discount + Wishlist */}
+          {/* Price + Wishlist */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
               <p className="text-blue-600 font-bold text-2xl">
@@ -227,7 +209,7 @@ export default function ProductDetailsClient({
               )}
             </div>
             <button
-              onClick={() => toggleWishlist(product.id)}
+              onClick={() => toggleWishlist(product._id)}
               className={`p-3 rounded-full shadow ${
                 isInWishlist
                   ? "bg-red-500 text-white"
@@ -238,38 +220,11 @@ export default function ProductDetailsClient({
             </button>
           </div>
 
-          {/* Color Options */}
-          {product.colors && product.colors.length > 0 && (
-            <div className="mb-4">
-              <p className="font-medium mb-2 flex items-center gap-2">
-                <FaPalette /> Choose Color:
-              </p>
-              <div className="flex gap-2">
-                {product.colors.map((c) => (
-                  <button
-                    key={c.name}
-                    onClick={() => {
-                      setActiveColor(c.name);
-                      setActiveIdx(0);
-                    }}
-                    className={`px-3 py-1 rounded border ${
-                      activeColor === c.name
-                        ? "border-blue-600 bg-blue-50"
-                        : "border-gray-300 hover:border-gray-400"
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* Add to cart + checkout */}
           {!quantity ? (
             <div className="flex gap-2">
               <button
-                onClick={() => updateCart(product.id, +1)}
+                onClick={() => updateCart(product._id, +1)}
                 className="flex-1 bg-blue-600 text-white px-4 py-3 rounded-lg font-medium hover:bg-blue-700"
               >
                 Add to Cart
@@ -287,7 +242,7 @@ export default function ProductDetailsClient({
                 <span className="font-medium">Quantity</span>
                 <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-3 py-2">
                   <button
-                    onClick={() => updateCart(product.id, -1)}
+                    onClick={() => updateCart(product._id, -1)}
                     className="bg-red-500 text-white p-2 rounded hover:bg-red-600"
                   >
                     <FaMinus className="w-4 h-4" />
@@ -296,13 +251,13 @@ export default function ProductDetailsClient({
                     {quantity}
                   </span>
                   <button
-                    onClick={() => updateCart(product.id, +1)}
+                    onClick={() => updateCart(product._id, +1)}
                     className="bg-green-500 text-white p-2 rounded hover:bg-green-600"
                   >
                     <FaPlus className="w-4 h-4" />
                   </button>
                   <button
-                    onClick={() => updateCart(product.id, -quantity)}
+                    onClick={() => updateCart(product._id, -quantity)}
                     className="bg-red-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-red-700"
                   >
                     Remove
@@ -389,7 +344,7 @@ export default function ProductDetailsClient({
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {related.map((p) => (
-              <ProductCard key={p.id} product={p} />
+              <ProductCard key={p._id} product={p} />
             ))}
           </div>
         </section>

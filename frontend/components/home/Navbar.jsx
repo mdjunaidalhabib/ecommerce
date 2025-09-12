@@ -3,7 +3,6 @@ import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useCart } from "../../context/CartContext";
-import products from "../../data/products";
 import { apiFetch } from "../../utils/api";
 import {
   FaShoppingCart,
@@ -20,17 +19,19 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState([]);
 
   // ✅ user state
   const [me, setMe] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
-  const cartCount = Object.keys(cart).length;
+  // ✅ Cart count = সব quantity যোগফল
+  const cartCount = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
   const wishlistCount = wishlist.length;
 
   const searchRef = useRef(null);
 
-  // Load current user
+  // ✅ Load current user
   useEffect(() => {
     apiFetch("/auth/me", { credentials: "include" })
       .then(async (res) => {
@@ -49,20 +50,41 @@ const Navbar = () => {
       });
   }, []);
 
-  // Click outside handler -> clear search
+  // ✅ fetch products from backend on search query
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const fetchProducts = async () => {
+      try {
+        const res = await fetch("http://localhost:4000/api/products");
+        if (!res.ok) return;
+        const data = await res.json();
+        const filtered = data.filter((p) =>
+          p.name.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+        setSearchResults(filtered);
+      } catch (err) {
+        console.error("❌ Search fetch failed", err);
+      }
+    };
+
+    fetchProducts();
+  }, [searchQuery]);
+
+  // ✅ Click outside handler -> clear search
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (searchRef.current && !searchRef.current.contains(e.target)) {
         setSearchQuery("");
+        setSearchResults([]);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const filteredProducts = products.filter((p) =>
-    p.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
 
   return (
     <>
@@ -108,17 +130,17 @@ const Navbar = () => {
               />
               {searchQuery && (
                 <div className="absolute mt-1 w-64 bg-white shadow-lg rounded-lg max-h-60 overflow-y-auto z-50">
-                  {filteredProducts.slice(0, 6).map((p) => (
+                  {searchResults.slice(0, 6).map((p) => (
                     <Link
-                      key={p.id}
-                      href={`/products/${p.id}`}
+                      key={p._id || p.id}
+                      href={`/products/${p._id || p.id}`}
                       onClick={() => setSearchQuery("")}
                       className="block px-3 py-2 hover:bg-gray-100"
                     >
                       {p.name}
                     </Link>
                   ))}
-                  {!filteredProducts.length && (
+                  {!searchResults.length && (
                     <p className="px-3 py-2 text-gray-500">No results found</p>
                   )}
                 </div>
@@ -137,7 +159,7 @@ const Navbar = () => {
             <AccountMenu me={me} setMe={setMe} loadingUser={loadingUser} />
 
             {/* Cart */}
-            <div className="hidden  md:block">
+            <div className="hidden md:block">
               <Link href="/cart" className="relative ">
                 <FaShoppingCart className="w-6 h-6" />
                 {cartCount > 0 && (
@@ -149,7 +171,7 @@ const Navbar = () => {
             </div>
 
             {/* Wishlist */}
-            <div className="hidden  md:block">
+            <div className="hidden md:block">
               <Link href="/wishlist" className="relative">
                 <FaHeart className="w-6 h-6" />
                 {wishlistCount > 0 && (
@@ -162,7 +184,7 @@ const Navbar = () => {
           </div>
         </div>
 
-        {/* Mobile search bar */}
+        {/* ----------- MOBILE SEARCH ----------- */}
         {mobileSearchOpen && (
           <div
             className="md:hidden bg-white border-t px-4 py-2 shadow relative"
@@ -177,10 +199,10 @@ const Navbar = () => {
             />
             {searchQuery && (
               <div className="absolute left-0 right-0 mt-1 bg-white shadow-lg rounded-lg max-h-60 overflow-y-auto z-50">
-                {filteredProducts.slice(0, 6).map((p) => (
+                {searchResults.slice(0, 6).map((p) => (
                   <Link
-                    key={p.id}
-                    href={`/products/${p.id}`}
+                    key={p._id || p.id}
+                    href={`/products/${p._id || p.id}`}
                     onClick={() => {
                       setSearchQuery("");
                       setMobileSearchOpen(false);
@@ -190,7 +212,7 @@ const Navbar = () => {
                     {p.name}
                   </Link>
                 ))}
-                {!filteredProducts.length && (
+                {!searchResults.length && (
                   <p className="px-4 py-2 text-gray-500">No results found</p>
                 )}
               </div>

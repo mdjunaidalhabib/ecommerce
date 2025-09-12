@@ -14,12 +14,14 @@ import { useCart } from "../../context/CartContext";
 const ProductCard = ({ product }) => {
   const { cart, setCart, wishlist, setWishlist } = useCart();
 
-  const quantity = cart[product.id] || 0;
-  const discount = (
-    ((product.oldPrice - product.price) / product.oldPrice) *
-    100
-  ).toFixed(1);
-  const isInWishlist = wishlist.includes(product.id);
+  // MongoDB এর _id অথবা static data এর id fallback
+  const productId = product._id || product.id;
+
+  const quantity = cart[productId] || 0;
+  const discount = product.oldPrice
+    ? (((product.oldPrice - product.price) / product.oldPrice) * 100).toFixed(1)
+    : 0;
+  const isInWishlist = wishlist.includes(productId);
   const totalPrice = product.price * quantity;
 
   const updateCart = (id, change) => {
@@ -42,19 +44,21 @@ const ProductCard = ({ product }) => {
 
   return (
     <Link
-      href={`/products/${product.id}`}
+      href={`/products/${productId}`}
       className="relative bg-white shadow-md p-3 rounded-lg hover:shadow-lg transition flex flex-col"
     >
       {/* Discount badge */}
-      <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
-        -{discount}%
-      </div>
+      {product.oldPrice && (
+        <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded-md text-xs font-semibold">
+          -{discount}%
+        </div>
+      )}
 
       {/* Wishlist */}
       <button
         onClick={(e) => {
           e.preventDefault();
-          toggleWishlist(product.id);
+          toggleWishlist(productId);
         }}
         className={`absolute top-2 right-2 p-2 rounded-full shadow-md transition ${
           isInWishlist ? "bg-red-500 text-white" : "bg-gray-200 text-gray-600"
@@ -94,9 +98,11 @@ const ProductCard = ({ product }) => {
         <p className="text-blue-600 font-bold text-sm sm:text-base">
           ৳{product.price}
         </p>
-        <p className="text-gray-400 line-through text-xs sm:text-sm">
-          ৳{product.oldPrice}
-        </p>
+        {product.oldPrice && (
+          <p className="text-gray-400 line-through text-xs sm:text-sm">
+            ৳{product.oldPrice}
+          </p>
+        )}
       </div>
 
       {/* Cart actions */}
@@ -104,7 +110,7 @@ const ProductCard = ({ product }) => {
         <button
           onClick={(e) => {
             e.preventDefault();
-            updateCart(product.id, +1);
+            updateCart(productId, +1);
           }}
           className="mt-auto bg-blue-600 w-full text-white px-3 py-1 sm:px-4 sm:py-2 rounded-lg flex items-center justify-center gap-2 hover:bg-blue-700 text-sm sm:text-base"
         >
@@ -118,7 +124,7 @@ const ProductCard = ({ product }) => {
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  updateCart(product.id, -1);
+                  updateCart(productId, -1);
                 }}
                 className="bg-red-500 text-white p-1 sm:p-2 rounded-lg hover:bg-red-600"
               >
@@ -128,7 +134,7 @@ const ProductCard = ({ product }) => {
               <button
                 onClick={(e) => {
                   e.preventDefault();
-                  updateCart(product.id, +1);
+                  updateCart(productId, +1);
                 }}
                 className="bg-green-500 text-white p-1 sm:p-2 rounded-lg hover:bg-green-600"
               >
