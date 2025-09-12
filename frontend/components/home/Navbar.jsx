@@ -232,6 +232,20 @@ const Navbar = () => {
             <FaThLarge className="w-5 h-5" />
             <span>Category</span>
           </Link>
+
+          <Link
+            href="/wishlist"
+            className="relative flex flex-col items-center"
+          >
+            <FaHeart className="w-5 h-5" />
+            {wishlistCount > 0 && (
+              <span className="absolute -top-1 right-1 bg-red-500 text-xs text-white px-1.5 rounded-full">
+                {wishlistCount}
+              </span>
+            )}
+            <span>Wishlist</span>
+          </Link>
+
           <Link href="/cart" className="relative flex flex-col items-center">
             <FaShoppingCart className="w-5 h-5" />
             {cartCount > 0 && (
@@ -240,18 +254,6 @@ const Navbar = () => {
               </span>
             )}
             <span>Cart</span>
-          </Link>
-          <Link
-            href="/wishlist"
-            className="relative flex flex-col items-center"
-          >
-            <FaHeart className="w-5 h-5" />
-            {wishlistCount > 0 && (
-              <span className="absolute -top-1 -right-2 bg-red-500 text-xs text-white px-1.5 rounded-full">
-                {wishlistCount}
-              </span>
-            )}
-            <span>Wishlist</span>
           </Link>
         </div>
       </div>

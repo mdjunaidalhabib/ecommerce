@@ -4,14 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
-/**
- * ImageSlider.jsx (mobile-swipe + desktop-hover-arrows)
- * -----------------------------------------------------------
- * - Infinite forward loop; last→first also animates smoothly
- * - Desktop: arrows appear on hover (hidden on mobile)
- * - Mobile: natural swipe (drag) to switch slides (no arrows)
- * - Pure JSX (no TS)
- */
 
 const defaultSlides = [
   { src: "/photo/p1.jpg", alt: "Promo 1", href: "/promo-1" },
@@ -124,7 +116,7 @@ export default function ImageSlider({
 
   return (
     <section
-      className="relative container mx-auto px-4 sm:px-6 lg:px-8"
+      className="relative container mx-auto  py-4  sm:px-6 lg:px-8"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       aria-label="Image slider"

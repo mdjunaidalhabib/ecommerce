@@ -6,8 +6,18 @@ import ProductCard from "./ProductCard";
 // Utility: group products by category id
 const groupByCategory = (all, catId) => all.filter((p) => p.category === catId);
 
+// Skeleton for loading ProductCard
+const ProductCardSkeleton = () => (
+  <div className="bg-white shadow-md p-3 rounded-lg animate-pulse flex flex-col">
+    <div className="h-40 sm:h-48 md:h-52 bg-gray-200 rounded-lg mb-3"></div>
+    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+    <div className="mt-auto h-10 bg-gray-200 rounded"></div>
+  </div>
+);
+
 // CategoryRow: reusable slider per category
-const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
+const CategoryRow = ({ category, items, autoPlayMs = 3000, loading }) => {
   const trackRef = useRef(null);
   const [index, setIndex] = useState(0);
   const [enableTransition, setEnableTransition] = useState(true);
@@ -105,13 +115,21 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
   return (
     <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl sm:text-2xl font-semibold">{category.name}</h2>
-        <Link
-          href={`/categories/${category.id}`}
-          className="text-blue-600 hover:underline text-sm sm:text-base"
-        >
-          View all
-        </Link>
+        <h2 className="text-xl sm:text-2xl font-semibold">
+          {loading ? (
+            <span className="bg-gray-200 h-6 w-32 rounded animate-pulse inline-block"></span>
+          ) : (
+            category.name
+          )}
+        </h2>
+        {!loading && (
+          <Link
+            href={`/categories/${category.id}`}
+            className="text-blue-600 hover:underline text-sm sm:text-base"
+          >
+            View all
+          </Link>
+        )}
       </div>
 
       <div className="relative overflow-hidden">
@@ -128,15 +146,25 @@ const CategoryRow = ({ category, items, autoPlayMs = 3000 }) => {
           onPointerCancel={onPointerUp}
           onPointerLeave={onPointerUp}
         >
-          {extended.map((prod, i) => (
-            <div
-              key={`${prod._id || prod.id}-${i}`}
-              className="shrink-0 px-2"
-              style={{ width: `${100 / slidesPerView}%` }}
-            >
-              <ProductCard product={prod} />
-            </div>
-          ))}
+          {loading
+            ? Array.from({ length: slidesPerView * 2 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="shrink-0 px-2"
+                  style={{ width: `${100 / slidesPerView}%` }}
+                >
+                  <ProductCardSkeleton />
+                </div>
+              ))
+            : extended.map((prod, i) => (
+                <div
+                  key={`${prod._id || prod.id}-${i}`}
+                  className="shrink-0 px-2"
+                  style={{ width: `${100 / slidesPerView}%` }}
+                >
+                  <ProductCard product={prod} />
+                </div>
+              ))}
         </div>
       </div>
     </section>
@@ -153,6 +181,7 @@ const speedByCategory = {
 export default function HomeCategorySections() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // fetch products + categories from backend
   useEffect(() => {
@@ -168,6 +197,8 @@ export default function HomeCategorySections() {
         setCategories(cRes);
       } catch (err) {
         console.error("❌ Failed to fetch products or categories", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
@@ -175,18 +206,24 @@ export default function HomeCategorySections() {
 
   return (
     <div className="space-y-4">
-      {categories.map((cat) => {
-        const items = groupByCategory(products, cat.id);
-        if (!items.length) return null;
-        return (
-          <CategoryRow
-            key={cat.id}
-            category={cat}
-            items={items}
-            autoPlayMs={speedByCategory[cat.id] ?? 3000}
-          />
-        );
-      })}
+      {loading
+        ? // show placeholder sections during loading
+          Array.from({ length: 3 }).map((_, i) => (
+            <CategoryRow key={i} category={{ name: "" }} items={[]} loading />
+          ))
+        : categories.map((cat) => {
+            const items = groupByCategory(products, cat.id);
+            if (!items.length) return null;
+            return (
+              <CategoryRow
+                key={cat.id}
+                category={cat}
+                items={items}
+                autoPlayMs={speedByCategory[cat.id] ?? 3000}
+                loading={false}
+              />
+            );
+          })}
     </div>
   );
 }
